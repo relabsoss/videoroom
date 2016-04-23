@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8">
+    <title>WebRTC tester</title>
+    <style type="text/css">
+      html, body, div, span, applet, object, iframe,
+      h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+      a, abbr, acronym, address, big, cite, code,
+      del, dfn, em, img, ins, kbd, q, s, samp,
+      small, strike, strong, sub, sup, tt, var,
+      b, u, i, center,
+      dl, dt, dd, ol, ul, li,
+      fieldset, form, label, legend,
+      table, caption, tbody, tfoot, thead, tr, th, td,
+      article, aside, canvas, details, embed, 
+      figure, figcaption, footer, header, hgroup, 
+      menu, nav, output, ruby, section, summary,
+      time, mark, audio, video {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-size: 100%;
+        font: inherit;
+        vertical-align: baseline;
+      }
+      article, aside, details, figcaption, figure, 
+      footer, header, hgroup, menu, nav, section {
+        display: block;
+      }
+      body {
+        line-height: 1;
+      }
+      ol, ul {
+        list-style: none;
+      }
+      blockquote, q {
+        quotes: none;
+      }
+      blockquote:before, blockquote:after,
+      q:before, q:after {
+        content: '';
+        content: none;
+      }
+      table {
+        border-collapse: collapse;
+        border-spacing: 0;
+      }
+      .table {
+        display: table;         
+          width: 100%;         
+      }
+      .table .row {
+        display: table-row;
+        width: auto;
+        clear: both;
+      }
+      .table .col {
+        float: left;
+        display: table-column;         
+      }
+      .c  { text-align: center; }
+      .w10 { width: 10%; }
+      .w20 { width: 20%; }
+      .w30 { width: 30%; }
+      .w40 { width: 40%; }
+      .w50 { width: 50%; }
+      .w60 { width: 60%; }
+      .w70 { width: 70%; }
+      .w80 { width: 80%; }
+      .w90 { width: 90%; }
+      .w100 { width: 100%; }
+      .hide { display: none; }
+
+      body { font-family: sans-serif !important; color: #111; background: #f0f0f0; } 
+      .ws { font-family: monospace; color: #fff; background: #069; font-size: 9pt; padding: 10px;
+        text-align: right; } 
+      .enter_form { padding: 20px 30px; background: #ddd; }
+      .room { margin: 20px 30px; width: 100%; }
+      .roaster { margin: 20px 30px; }
+      .video_me { width: 100%; height: 320px; background: #000; }
+      video.me { width: 100%; height: 320px; background: #000; }
+      .video_user { width: 400px; color: #999; float: left; }
+      .video_title { margin: 5px; }
+      video { width: 400px; height: 300px; background: #000;  }
+      .title { font-size: 12pt; font-weight: bold; padding: 0 0 20px 0; }
+      .error { padding: 10px 20px; color: #fff; background: #e00; font-weight: bold; cursor: pointer; }
+      .info { font-size: 9pt; color: #666; margin: 30px; }
+      .chat_form { margin: 20px 0 0 0; }
+      .chat { height: 400px; overflow: auto; background: #fff;  }
+      .chat .system { font-size: 8pt; color: #666; padding: 5px 15px 5px 15px; }
+      .chat .msg { padding: 5px 15px 5px 15px; }
+      .chat .msg .self { font-weight: bold; color: #069; padding-right: 5px; }
+      .chat .msg .user { font-weight: bold; color: #666; padding-right: 5px; }
+    </style> 
+  </head>
+  <body>
+    <div id="state" class="ws"></div>
+    <div class="enter_form">
+      <form onsubmit="return enter();">
+        Enter your name here:
+        <input type="text" size="16" id="name">
+      </form>
+    </div>
+    
+    <div id="room_view" class="table" style="display: none">
+      <div class="row">
+        <div class="col w70">
+          <div id="room">
+            <br>
+          </div>
+        </div>
+        <div class="col w30">
+          <div class="roaster">
+            <div id="title_name" class="title"></div>
+            <div class="src_select">
+              <select id="source" size='1' class='w100' onchange="video_source();">
+                <option value='camera' selected>Camera</option>
+                <option value='screen'>Screen</option>
+              </select>
+            </div>
+            <div id="media_error" class="error" style="display: none">
+              Please, turn on video and audio capture in your browser
+            </div>
+            
+            <div class="video_me">
+              <video class='me' muted/>          
+            </div>
+            <div id="need_screen_capture" class="info">
+              You need the browser extension fo screen capture 
+              - <a href="https://chrome.google.com/webstore/detail/screen-capturing/ajhifddimkapgcifgcodmmfdlknahffk">Chrome</a> or <a href="https://addons.mozilla.org/en-US/firefox/addon/enable-screen-capturing/">Firefox</a>.
+            </div>
+            <div class="chat_form">
+              <form onsubmit="return chat();">
+                <input type="text" id="chat_text" class="w90">
+              </form>
+              <div id="chat" class="chat"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <div class="hide">
+      <audio id="on_enter" class="sounds" src="/static/enter.mp3">
+    </div>
+
+    <script   src="https://code.jquery.com/jquery-2.2.2.min.js"   
+      integrity="sha256-36cp2Co+/62rEAAYHLmRCPIych47CvdM+uTBJwSzWjI="   
+      crossorigin="anonymous"></script>
+    <script src="https://cdn.WebRTC-Experiment.com/getScreenId.js"></script>
+    <script type="text/javascript">
+      var is_ff = !!navigator.mozGetUserMedia;
+      var is_chrome = !!navigator.webkitGetUserMedia;
+      var is_mobile = !!navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i);
+
+      var Media = { 
+        stream: null,
+        source: "camera",
+        peers: {}, 
+        PC: window.mozRTCPeerConnection || window.webkitRTCPeerConnection,
+        ICE: window.mozRTCIceCandidate || window.RTCIceCandidate,
+        SD: window.mozRTCSessionDescription || window.RTCSessionDescription
+      };
+      navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
+
+      $(".sounds").map(function(_i, v) { v.load(); });
+
+      var WS = null;
+      var name = null;
+
+      function init() {
+        if(WS) {
+          if(WS.readyState == WS.CONNECTING) return;
+
+          WS.onopen = null;
+          WS.onmessage = null;
+          WS.onclose = null;
+          WS.onerror = null;
+
+          if(WS.readyState == WS.OPEN) WS.close();
+        }
+        WS = new WebSocket( 
+          (window.location.protocol == "https:" ? "wss" : "ws") + 
+            "://" + window.location.host + "/control");
+
+        WS.onopen = function() { $("#state").html("open"); };
+        WS.onmessage = function(m) { if(m && m.data) handle(jQuery.parseJSON(m.data)); };
+        WS.onclose = function() { $("#state").html("close"); setTimeout(function() { init(); }, 1000); };
+        WS.onerror = function() { $("#state").html("error"); setTimeout(function() { init(); }, 1000); };
+      };
+      function send(m) { 
+        return (WS && WS.readyState == WS.OPEN) ? WS.send(JSON.stringify(m)) : false; 
+      } 
+      function handle(m) {
+        switch(m.op) {
+          case "here": 
+            if(m.user && m.user.id) media_peer(m.user, false);
+            break;
+          case "enter":
+            if(m.user && m.user.id) {
+              var vp = $(".video_user video");
+              
+              vp.map(function(_i, v) { $(v).attr('cv', v.volume); v.volume = 0; });
+              $("#on_enter")[0].play();
+              vp.map(function(_i, v) { v.volume = 0 + $(v).attr('cv'); });
+
+              $("#chat").append($("<div class='system' />").text(m.user.name + " enter."));
+              media_peer(m.user, true);
+            }
+            break;
+          case "pub":
+            switch(m.m.op) {
+              case "chat":
+                $("#chat").append(
+                    $("<div class='msg'/>")
+                      .append(
+                        $("<span/>").addClass(m.from.name == name ? 'self' : 'user').text(m.from.name)
+                      ).append(
+                        $("<span class='txt'/>").text(m.m.txt)
+                      )
+                  );
+                break;
+              case "update":
+                if(m.from && m.from.id) {
+                    if(Media.peers[m.from.id]) {
+                      media_reset(m.from.id);
+                      media_peer(m.from, true);
+                    }
+                }
+                break;
+            }
+            break;
+          case "send":
+            switch(m.m.op) {
+              case "offer":
+                media_remote_peer(m.from.id, m.m.desc);
+                media_peer_answer(m.from.id);
+                break;
+              case "answer":
+                media_remote_peer(m.from.id, m.m.desc);
+                break;
+              case "ice":
+                media_ice_peer(m.from.id, m.m.candidate);
+                break;
+            } 
+            break;
+          case "leave":
+            if(m.user && m.user.id) {
+              $("#" + m.user.id).detach();
+              $("#chat").append($("<div class='system'/>").text(m.user.name + " leave."));
+            }
+            break;
+          default:
+            console.log(m);
+        };
+      }
+      function strip(s) {
+        return s.replace(/&/g, "&amp;")
+          .replace(/>/g, "&gt;")
+          .replace(/</g, "&lt;")
+          .replace(/"/g, "&quot;"); }
+
+      function media_start() {
+        if(Media.stream) {
+          $.map(Media.peers, function(v) { if(v.pc) v.pc.removeStream(Media.stream); });
+
+          if(Media.stream.stop) Media.stream.stop();
+          else $.map(Media.stream.getTracks(), function(t) { t.stop(); });
+
+          Media.stream = null;
+        };
+        var init = function(params) {
+          navigator.getUserMedia(
+            params, 
+            function(stream) {
+              Media.stream = stream;
+              $("video.me").attr("src", URL.createObjectURL(stream));
+              $("video.me")[0].play();
+                
+              $.map(Media.peers, function(v) { media_reset(v.id); });
+              setTimeout(function() { send({ op: "pub", m: { op: "update" } }); }, 5000);
+            }, 
+            function(error) {
+              console.log(error);
+              media_error();
+            });
+        }
+        if(Media.source == "screen") {
+          getScreenId(function (error, sid, constr) {
+              if(!error) init(constr);
+              else media_error();
+            });
+        } else {
+          init({ audio: true, video: { width: 1280, height: 720 } });
+        }
+      }
+      function media_error() {
+        $("#media_error")
+          .show('fast')
+          .off('click')
+          .click(function() { $(this).hide('fast', function() { media_start(); }); });
+        Media.stream = null;        
+      }
+      function media_peer(u, is_active) {
+        Media.peers[u.id] = u;
+        
+        $("#" + u.id).detach();
+        $("#room").append(
+          $("<div class='video_user'/>")
+            .attr('id', u.id)
+            .append($("<div class='video_title'/>").text(u.name))
+            .append("<video autoplay controls/>"));
+        
+        if(is_active) media_peer_offer(u.id);
+      }
+      
+      function media_reset(pid) {
+        if(Media.peers[pid].pc) {
+          Media.peers[pid].pc.close();
+          Media.peers[pid].pc = null;
+        }
+      }
+
+      function media_peer_init(pid) {
+        Media.peers[pid].pc = new Media.PC({iceServers: [
+                { url: "stun:stun.l.google.com:19302" },
+                { url: "stun:stun1.l.google.com:19302" },
+                { url: "stun:stun2.l.google.com:19302" },
+                { url: "stun:stun3.l.google.com:19302" },
+                { url: "stun:stun4.l.google.com:19302" },
+                { url: 'stun:stun.anyfirewall.com:3478' },
+                {
+                  url: 'turn:turn.anyfirewall.com:443?transport=tcp',
+                  credential: 'webrtc',
+                  username: 'webrtc'
+                }
+            ]});
+        if(Media.stream) Media.peers[pid].pc.addStream(Media.stream);
+        Media.peers[pid].pc.onicecandidate = function(event) {
+          if(event && event.candidate) send({
+                  op: "send",
+                  to: pid,
+                  m: {
+                    op: "ice",
+                    candidate: event.candidate
+                  }
+              });
+        };
+        Media.peers[pid].pc.onaddstream = function(event) {
+          $("#" + pid + " video").attr("src", URL.createObjectURL(event.stream));
+        };
+      }
+      function media_peer_offer(pid) {
+        if(!Media.peers[pid]) return;
+        if(!Media.peers[pid].pc) media_peer_init(pid);
+        Media.peers[pid].pc.createOffer(
+          function(desc) { 
+            Media.peers[pid].pc.setLocalDescription(desc); 
+            send({
+              op: "send",
+              to: pid,
+              m: {
+                op: "offer",
+                desc: desc
+              }});
+          },
+          function(error) { console.log(error) }, 
+          media_peer_params()                    
+        );
+      }
+      function media_peer_answer(pid) {
+        if(!Media.peers[pid]) return;
+        if(!Media.peers[pid].pc) media_peer_init(pid);
+        Media.peers[pid].pc.createAnswer(
+          function(desc) { 
+            Media.peers[pid].pc.setLocalDescription(desc); 
+            send({
+              op: "send",
+              to: pid,
+              m: {
+                op: "answer",
+                desc: desc
+              }});
+          },
+          function(error) { console.log(error) }, 
+          media_peer_params()
+        );
+      }
+      function media_peer_params() {
+        return is_ff ? 
+          { "offerToReceiveAudio": true, "offerToReceiveVideo": true }
+          : { 'mandatory': { 'OfferToReceiveAudio': true, 'OfferToReceiveVideo': true } };
+      }
+      function media_remote_peer(pid, desc) {
+        if(!Media.peers[pid]) return;
+        if(!Media.peers[pid].pc) media_peer_init(pid);
+
+        var sdesc = new Media.SD(desc);
+        Media.peers[pid].pc.setRemoteDescription(sdesc);
+      }
+      function media_ice_peer(pid, candidate) {
+        if(!Media.peers[pid] || !Media.peers[pid].pc) return;
+        var icec = new Media.ICE(candidate);
+        Media.peers[pid].pc.addIceCandidate(icec);
+      }
+
+      function enter() {
+        name = $("#name").val();
+        if(name && name.length) {
+          send({ op: "hereiam", name: name });
+          $(".enter_form").hide('fast');
+          $("#title_name").text(name);
+          $("#room_view").show('fast');
+          media_start();
+        } else {
+          $("#name").css('border', 'solid 3px #f00').change(function(){ $(this).css('border', 'solid 1px #069'); });
+        }
+        return false;  
+      }
+      function chat() {
+        var txt = $("#chat_text").val();
+        if(name && txt && txt.length) {
+          send({ op: "pub", m: { op: "chat", txt: txt } });
+          $("#chat_text").val("");
+        }
+        return false;
+      }
+      function video_source() {
+        Media.source = $("#source").val();
+        media_start();
+      }
+
+      $(document).ready(function() { init(); });
+    </script>
+  </body>
+</html>
