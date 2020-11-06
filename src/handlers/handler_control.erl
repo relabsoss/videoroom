@@ -50,15 +50,15 @@ process(#{ <<"op">> := <<"hereiam">>, <<"name">> := Name }, undefined) ->
   ?PUB(users, {whoareyou, self()}),
   ?PUB(users, {send, #{ op => <<"enter">>, user => State }}),
   ?SUB(users),
-  State;
+  {ok, State};
 
 process(#{ <<"op">> := <<"send">>, <<"to">> := To, <<"m">> := M }, #{ name := _, id := _ } = State) ->
   ?PUB({user, To}, {send, #{ op => <<"send">>, from => State, m => M }}),
-  State;
+  {ok, State};
 
 process(#{ <<"op">> := <<"pub">>, <<"m">> := M }, #{ name := _, id := _ } = State) ->
   ?PUB(users, {send, #{ op => <<"pub">>, from => State, m => M }}),
-  State;
+  {ok, State};
 
 process(Msg, State) -> 
   ?LOG_INFO("Unknown message ~p > ~p", [State, Msg]), 
