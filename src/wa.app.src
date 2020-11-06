@@ -1,12 +1,22 @@
 {application, wa,
  [
-  {description, ""},
-  {vsn, "1"},
+  {description, "AutoMD app"},
+  {vsn, "1.0.0"},
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  gproc,
+                  crypto,
+                  ranch,
+                  cowlib,
+                  cowboy,
+                  gun,
+                  pooler
                  ]},
+  {included_applications, [
+                            eknife
+                          ]},
   {mod, { wa_app, []}},
   {env, []}
  ]}.

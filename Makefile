@@ -1,27 +1,30 @@
 APPNAME=wa
-REBAR=./rebar
+SERVICENAME=videoroom
+
+REBAR=./rebar3
+ERL=erl
 ERLC=erlc
-COOKIE=gRPZkPvMUvHuBMn0Leuw8vzK0yeK5Cu1
 
-.PHONY:deps
+all: compile
 
-all: deps compile
-
-./rebar:
-	erl -noshell -s inets start -s ssl start \
-		-eval 'httpc:request(get, {"http://github.com/downloads/basho/rebar/rebar", []}, [], [{stream, "./rebar"}])' \
+$(REBAR):
+	$(ERL) \
+		-noshell -s inets start -s ssl start \
+		-eval 'httpc:request(get, {"https://s3.amazonaws.com/rebar3/rebar3", []}, [], [{stream, "./rebar3"}])' \
 		-s inets stop -s init stop
-	chmod +x ./rebar
+	chmod +x $(REBAR)
 
 compile: $(REBAR)
 	@$(REBAR) compile
 
+dialyzer: $(REBAR)
+	@$(REBAR) dialyzer
+
 clean: $(REBAR)
 	@$(REBAR) clean
 
-deps: $(REBAR)
-	@$(REBAR) check-deps || (export GPROC_DIST=true; $(REBAR) get-deps)
+xref: $(REBAR)
+	@$(REBAR) xref
 
 run:
-	erl +A 4 -set_cookie $(COOKIE) -pa ebin edit deps/*/ebin -sname $(APPNAME)@localhost -s $(APPNAME) -s sync
-
+	@$(REBAR) shell +pc unicode --config config/sys.config --sname $(SERVICENAME)_$(APPNAME)@localhost
