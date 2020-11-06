@@ -4,8 +4,7 @@
 -export([
         start/2, 
         stop/1,
-        priv_dir/0, 
-        priv/1
+        priv_dir/0
     ]).
 
 -include("wa.hrl").

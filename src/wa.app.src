@@ -1,6 +1,6 @@
 {application, wa,
  [
-  {description, "AutoMD app"},
+  {description, "VideoRoom app"},
   {vsn, "1.0.0"},
   {registered, []},
   {applications, [
@@ -10,9 +10,7 @@
                   crypto,
                   ranch,
                   cowlib,
-                  cowboy,
-                  gun,
-                  pooler
+                  cowboy
                  ]},
   {included_applications, [
                             eknife
