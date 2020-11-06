@@ -126,10 +126,6 @@
             <div class="video_me">
               <video class='me' muted/>          
             </div>
-            <div id="need_screen_capture" class="info">
-              You need the browser extension fo screen capture 
-              - <a href="https://chrome.google.com/webstore/detail/screen-capturing/ajhifddimkapgcifgcodmmfdlknahffk">Chrome</a> or <a href="https://addons.mozilla.org/en-US/firefox/addon/enable-screen-capturing/">Firefox</a>.
-            </div>
             <div class="chat_form">
               <form onsubmit="return chat();">
                 <input type="text" id="chat_text" class="w90">
@@ -148,7 +144,6 @@
     <script   src="https://code.jquery.com/jquery-2.2.2.min.js"   
       integrity="sha256-36cp2Co+/62rEAAYHLmRCPIych47CvdM+uTBJwSzWjI="   
       crossorigin="anonymous"></script>
-    <script src="https://cdn.WebRTC-Experiment.com/getScreenId.js"></script>
     <script type="text/javascript">
       var is_ff = !!navigator.mozGetUserMedia;
       var is_chrome = !!navigator.webkitGetUserMedia;
@@ -270,29 +265,32 @@
 
           Media.stream = null;
         };
-        var init = function(params) {
+        let init() = function() {
+          $("video.me")[0].srcObject = stream;
+          $("video.me")[0].play();
+                
+          $.map(Media.peers, function(v) { media_reset(v.id); });
+            setTimeout(function() { send({ op: "pub", m: { op: "update" } }); }, 5000);
+        }
+        if(Media.source == "screen") {
+          try {
+            Media.stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true});
+            init();
+          } catch(error) {
+            console.log(error);
+            media_error();
+          }
+        } else {
           navigator.getUserMedia(
-            params, 
+            { audio: true, video: { width: 640, height: 480 } }, 
             function(stream) {
               Media.stream = stream;
-              $("video.me")[0].srcObject = stream;
-              $("video.me")[0].play();
-                
-              $.map(Media.peers, function(v) { media_reset(v.id); });
-              setTimeout(function() { send({ op: "pub", m: { op: "update" } }); }, 5000);
+              init();
             }, 
             function(error) {
               console.log(error);
               media_error();
             });
-        }
-        if(Media.source == "screen") {
-          getScreenId(function (error, sid, constr) {
-              if(!error) init(constr);
-              else media_error();
-            });
-        } else {
-          init({ audio: true, video: { width: 1280, height: 720 } });
         }
       }
       function media_error() {
