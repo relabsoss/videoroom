@@ -14,7 +14,7 @@ init(Req, State) ->
   {cowboy_websocket, Req, State}.
 
 websocket_init(State) ->
-  {ok, State}.
+  {ok, undefined}.
 
 websocket_handle({text, Msg}, State) ->
   process(?FROM_JSON(Msg), State);
