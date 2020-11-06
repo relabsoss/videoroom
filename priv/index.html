@@ -275,7 +275,7 @@
             params, 
             function(stream) {
               Media.stream = stream;
-              $("video.me").attr("src", URL.createObjectURL(stream));
+              $("video.me")[0].srcObject = stream;
               $("video.me")[0].play();
                 
               $.map(Media.peers, function(v) { media_reset(v.id); });
@@ -348,7 +348,7 @@
               });
         };
         Media.peers[pid].pc.onaddstream = function(event) {
-          $("#" + pid + " video").attr("src", URL.createObjectURL(event.stream));
+          $("#" + pid + " video")[0].srcObject = event.stream;
         };
       }
       function media_peer_offer(pid) {
