@@ -44,8 +44,8 @@ terminate(_Reason, _PartialReq, _State) ->
 %
 
 process(#{ <<"op">> := <<"hereiam">>, <<"name">> := Name }, undefined) ->
-  Token = inout:token(),
-  State = #{ name => Name, id => utils:hash(Name) },
+  Token = utils:hash(Name),
+  State = #{ name => Name, id => Token },
   ?SUB({user, Token}),
   ?PUB(users, {whoareyou, self()}),
   ?PUB(users, {send, #{ op => <<"enter">>, user => State }}),
