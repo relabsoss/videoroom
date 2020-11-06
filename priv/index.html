@@ -274,8 +274,10 @@
         }
         if(Media.source == "screen") {
           try {
-            Media.stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true});
-            init();
+            navigator.mediaDevices.getDisplayMedia({ video: true, audio: true}).then(st => {
+              Media.stream = st;
+              init();
+            });
           } catch(error) {
             console.log(error);
             media_error();
